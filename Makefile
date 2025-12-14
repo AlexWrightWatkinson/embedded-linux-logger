@@ -8,7 +8,9 @@ TARGET := edlogd
 SRC := \
 		src/main.c \
 		src/sensor.c \
-		src/ring_buffer.c
+		src/ring_buffer.c \
+		src/logger_binary.c \
+		src/logger_journald.c
 
 OBJ := $(SRC:.c=.o)
 

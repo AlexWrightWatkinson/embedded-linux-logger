@@ -10,7 +10,8 @@
 #include "edlogd.h"
 #include "sensor.h"
 #include "ring_buffer.h"
-
+#include "logger.h"
+#include "logger_binary.h"
 
 /* global daemon state */
 
@@ -83,6 +84,21 @@ int main(int argc, char *argv[])
 
   sensor_init(0);
 
+  /* logger initialization */
+
+  logger_t logger;
+  if (logger_binary_create(&logger, "edlogd.bin") < 0)
+  {
+    fprintf(stderr, "edlogd: failed to init binary logger\n");
+    return EXIT_FAILURE;
+  }
+
+  if (logger.init(&logger) < 0)
+  {
+    fprintf(stderr, "edlogd: logger init failed\n");
+    return EXIT_FAILURE;
+  }
+
   /* main loop */
 
   while (atomic_load(&g_edlogd_state.running))
@@ -101,6 +117,11 @@ int main(int argc, char *argv[])
       fprintf(stderr, "edlogd: ring buffer overflow\n");
     }
 
+    else
+    {
+      logger.log_sample(&logger, &sample);
+    }
+
     struct timespec ts =
     {
       .tv_sec = 0,
@@ -110,6 +131,9 @@ int main(int argc, char *argv[])
   }
 
   fprintf(stdout, "edlogd: shutting down cleanly\n");
+
+  logger.flush(&logger);
+  logger.close(&logger);
 
   ring_buffer_free(&rb);
 
